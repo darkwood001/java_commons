@@ -21,18 +21,26 @@ public class JedisUtil {
 	}
 
 	public Jedis getJedis(String host, int port) {
-		Jedis jedis = null;
-		JedisPool pool = getJedisPool(host, port);
-		if (pool != null) {
-			jedis = pool.getResource();
+		Jedis jedis = getJedisFromPool(host, port);
+		if (jedis != null) {
+			jedis.select(Protocol.DEFAULT_DATABASE);
 		}
 		return jedis;
 	}
 
 	public Jedis getJedis(String host, int port, int database) {
-		Jedis jedis = getJedis(host, port);
+		Jedis jedis = getJedisFromPool(host, port);
 		if (jedis != null) {
 			jedis.select(database);
+		}
+		return jedis;
+	}
+
+	protected Jedis getJedisFromPool(String host, int port) {
+		Jedis jedis = null;
+		JedisPool pool = getJedisPool(host, port);
+		if (pool != null) {
+			jedis = pool.getResource();
 		}
 		return jedis;
 	}
