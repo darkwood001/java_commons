@@ -7,9 +7,7 @@ import javax.sql.DataSource;
 
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 
 import cn.einino.commons.db.exception.DataBaseTemplateException;
 import cn.einino.commons.db.template.TemplateUtil;
