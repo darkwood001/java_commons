@@ -17,20 +17,18 @@ import cn.einino.commons.db.template.TemplateUtil;
 public class MybatisTemplateUtil implements TemplateUtil<SqlSessionTemplate> {
 
 	protected SqlSessionTemplate template;
-	protected final String configLocation;
+	protected final Resource configLocation;
 	protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-	public MybatisTemplateUtil(String configLocation) {
+	public MybatisTemplateUtil(Resource configLocation) {
 		this.configLocation = configLocation;
 	}
 
 	@Override
 	public void initTemlate(DataSource dataSource) throws DataBaseTemplateException {
-		ResourceLoader loader = new DefaultResourceLoader();
-		Resource resource = loader.getResource(configLocation);
 		SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
 		factoryBean.setDataSource(dataSource);
-		factoryBean.setConfigLocation(resource);
+		factoryBean.setConfigLocation(configLocation);
 		try {
 			SqlSessionTemplate sessionTemplate = new SqlSessionTemplate(factoryBean.getObject());
 			try {
