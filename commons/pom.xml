@@ -10,6 +10,7 @@
 		<module>commons-core</module>
 		<module>commons-timer</module>
 		<module>commons-nosql</module>
+		<module>commons-db</module>
 	</modules>
 	<properties>
 		<junit.version>4.11</junit.version>
