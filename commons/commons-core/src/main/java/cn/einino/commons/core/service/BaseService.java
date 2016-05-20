@@ -6,4 +6,5 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseService {
 
 	protected final Logger Log = LoggerFactory.getLogger(getClass());
+	// protected static final Timer timer = new Timer(true);
 }
