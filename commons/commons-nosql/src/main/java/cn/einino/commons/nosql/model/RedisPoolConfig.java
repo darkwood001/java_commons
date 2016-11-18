@@ -1,72 +1,89 @@
 package cn.einino.commons.nosql.model;
 
+import redis.clients.jedis.JedisPoolConfig;
+
 public class RedisPoolConfig extends RedisDatasourceConfig {
 
-	private String password;
-	private int maxTotal = 32;
-	private int maxIdle = 8;
-	private long maxWait = 60 * 1000;
-	private boolean testOnBorrow = false;
-	private boolean testOnReturn = false;
-	private int timeout = 60 * 1000;
+    private String key = "default";
+    private JedisPoolConfig poolConfig = new JedisPoolConfig();
+    private int timeout = 60 * 1000;
 
-	public RedisPoolConfig() {
-	}
+    public RedisPoolConfig() {
+        poolConfig.setMaxTotal(32);
+        poolConfig.setMinIdle(2);
+        poolConfig.setMaxIdle(8);
+        poolConfig.setMaxWaitMillis(60 * 1000);
+        poolConfig.setTestOnBorrow(false);
+        poolConfig.setTestOnReturn(false);
+        poolConfig.setTestWhileIdle(true);
+    }
 
-	public final String getPassword() {
-		return password;
-	}
+    public String getKey() {
+        return key;
+    }
 
-	public final void setPassword(String password) {
-		this.password = password;
-	}
+    public void setKey(String key) {
+        this.key = key;
+    }
 
-	public final int getMaxTotal() {
-		return maxTotal;
-	}
+    public JedisPoolConfig getPoolConfig() {
+        return poolConfig;
+    }
 
-	public final void setMaxTotal(int maxTotal) {
-		this.maxTotal = maxTotal;
-	}
+    public void setPoolConfig(JedisPoolConfig poolConfig) {
+        this.poolConfig = poolConfig;
+    }
 
-	public final int getMaxIdle() {
-		return maxIdle;
-	}
+    public final void setMaxTotal(int maxTotal) {
+        poolConfig.setMaxTotal(maxTotal);
+    }
 
-	public final void setMaxIdle(int maxIdle) {
-		this.maxIdle = maxIdle;
-	}
+    public final void setMaxIdle(int maxIdle) {
+        poolConfig.setMaxIdle(maxIdle);
+    }
 
-	public final long getMaxWait() {
-		return maxWait;
-	}
+    public final void setMinIdle(int minIdle) {
+        poolConfig.setMinIdle(minIdle);
+    }
 
-	public final void setMaxWait(long maxWait) {
-		this.maxWait = maxWait;
-	}
+    public final void setMaxWait(long maxWait) {
+        poolConfig.setMaxWaitMillis(maxWait);
+    }
 
-	public final boolean isTestOnBorrow() {
-		return testOnBorrow;
-	}
+    public final void setTestOnBorrow(boolean testOnBorrow) {
+        poolConfig.setTestOnBorrow(testOnBorrow);
+    }
 
-	public final void setTestOnBorrow(boolean testOnBorrow) {
-		this.testOnBorrow = testOnBorrow;
-	}
+    public final void setTestOnReturn(boolean testOnReturn) {
+        poolConfig.setTestOnReturn(testOnReturn);
+    }
 
-	public final boolean isTestOnReturn() {
-		return testOnReturn;
-	}
+    public final void setLifo(boolean lifo) {
+        poolConfig.setLifo(lifo);
+    }
 
-	public final void setTestOnReturn(boolean testOnReturn) {
-		this.testOnReturn = testOnReturn;
-	}
+    public final void setMinEvictableIdleTimeMillis(long millis) {
+        poolConfig.setMinEvictableIdleTimeMillis(millis);
+    }
 
-	public final int getTimeout() {
-		return timeout;
-	}
+    public final void setNumTestsPerEvictionRun(int num) {
+        poolConfig.setNumTestsPerEvictionRun(num);
+    }
 
-	public final void setTimeout(int timeout) {
-		this.timeout = timeout;
-	}
+    public final void setTestWhileIdle(boolean testWhileIdle) {
+        poolConfig.setTestWhileIdle(testWhileIdle);
+    }
+
+    public final void setTimeBetweenEvcitionRunsMillis(long millis) {
+        poolConfig.setTimeBetweenEvictionRunsMillis(millis);
+    }
+
+    public final int getTimeout() {
+        return timeout;
+    }
+
+    public final void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
 
 }

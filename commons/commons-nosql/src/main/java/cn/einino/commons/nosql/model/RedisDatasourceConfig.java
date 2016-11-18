@@ -4,35 +4,43 @@ import redis.clients.jedis.Protocol;
 
 public class RedisDatasourceConfig {
 
-	private String host;
-	private int port = 6379;
-	private int database = Protocol.DEFAULT_DATABASE;
+    private String host;
+    private int port = 6379;
+    private int database = Protocol.DEFAULT_DATABASE;
+    private String password;
 
-	public RedisDatasourceConfig() {
-	}
+    public RedisDatasourceConfig() {
+    }
 
-	public final String getHost() {
-		return host;
-	}
+    public final String getHost() {
+        return host;
+    }
 
-	public final void setHost(String host) {
-		this.host = host;
-	}
+    public final void setHost(String host) {
+        this.host = host;
+    }
 
-	public final int getPort() {
-		return port;
-	}
+    public final int getPort() {
+        return port;
+    }
 
-	public final void setPort(int port) {
-		this.port = port;
-	}
+    public final void setPort(int port) {
+        this.port = port;
+    }
 
-	public final int getDatabase() {
-		return database;
-	}
+    public final int getDatabase() {
+        return database;
+    }
 
-	public final void setDatabase(int database) {
-		this.database = database;
-	}
+    public final void setDatabase(int database) {
+        this.database = database;
+    }
 
+    public final String getPassword() {
+        return password;
+    }
+
+    public final void setPassword(String password) {
+        this.password = password;
+    }
 }

@@ -4,68 +4,60 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import cn.einino.commons.nosql.model.RedisDatasourceConfig;
 import cn.einino.commons.nosql.model.RedisPoolConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Protocol;
 
 public class JedisUtil {
 
-	private final Object lock = new Object();
-	private final Map<String, RedisPoolConfig> configs;
-	private volatile Map<String, JedisPool> pools = Collections.synchronizedMap(new HashMap<String, JedisPool>());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Object lock = new Object();
+    private volatile Map<String, JedisPool> pools = Collections.synchronizedMap(new HashMap<String, JedisPool>());
 
-	public JedisUtil(Map<String, RedisPoolConfig> configs) {
-		this.configs = configs;
-	}
+    public Jedis getJedis(RedisDatasourceConfig config) {
+        Jedis jedis;
+        if (config instanceof RedisPoolConfig) {
+            jedis = getJedisFromPool((RedisPoolConfig) config);
+        } else {
+            logger.info("Create single jedis");
+            jedis = new Jedis(config.getHost(), config.getPort());
+        }
+        if (jedis != null) {
+            jedis.select(config.getDatabase());
+        }
+        return jedis;
+    }
 
-	public Jedis getJedis(String host, int port) {
-		Jedis jedis = getJedisFromPool(host, port);
-		if (jedis != null) {
-			jedis.select(Protocol.DEFAULT_DATABASE);
-		}
-		return jedis;
-	}
+    protected Jedis getJedisFromPool(RedisPoolConfig config) {
+        Jedis jedis = null;
+        JedisPool pool = getJedisPool(config);
+        if (pool != null) {
+            jedis = pool.getResource();
+        }
+        return jedis;
+    }
 
-	public Jedis getJedis(String host, int port, int database) {
-		Jedis jedis = getJedisFromPool(host, port);
-		if (jedis != null) {
-			jedis.select(database);
-		}
-		return jedis;
-	}
-
-	protected Jedis getJedisFromPool(String host, int port) {
-		Jedis jedis = null;
-		JedisPool pool = getJedisPool(host, port);
-		if (pool != null) {
-			jedis = pool.getResource();
-		}
-		return jedis;
-	}
-
-	protected JedisPool getJedisPool(String host, int port) {
-		String key = new StringBuilder(host).append(":").append(port).toString();
-		JedisPool pool = pools.get(key);
-		if (pool == null) {
-			RedisPoolConfig config = configs.get(key);
-			if (config != null) {
-				synchronized (lock) {
-					pool = pools.get(key);
-					if (pool == null) {
-						JedisPoolConfig poolConf = new JedisPoolConfig();
-						poolConf.setMaxTotal(config.getMaxTotal());
-						poolConf.setMaxIdle(config.getMaxIdle());
-						poolConf.setMaxWaitMillis(config.getMaxWait());
-						poolConf.setTestOnBorrow(config.isTestOnBorrow());
-						poolConf.setTestOnReturn(config.isTestOnReturn());
-						pool = new JedisPool(poolConf, config.getHost(), config.getPort(), config.getTimeout());
-						pools.put(key, pool);
-					}
-				}
-			}
-		}
-		return pool;
-	}
+    protected JedisPool getJedisPool(RedisPoolConfig config) {
+        JedisPool pool = pools.get(config.getKey());
+        if (pool == null) {
+            synchronized (lock) {
+                pool = pools.get(config.getKey());
+                if (pool == null) {
+                    String msg = new StringBuilder("Create key:[").append(config.getKey()).append("] jedis poole").toString();
+                    logger.info(msg);
+                    if (config.getPassword() != null && !"".equals(config.getPassword())) {
+                        pool = new JedisPool(config.getPoolConfig(), config.getHost(), config.getPort(), config.getTimeout(), config.getPassword());
+                    } else {
+                        pool = new JedisPool(config.getPoolConfig(), config.getHost(), config.getPort(), config.getTimeout());
+                    }
+                    pools.put(config.getKey(), pool);
+                }
+            }
+        }
+        return pool;
+    }
 }
