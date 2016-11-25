@@ -13,4 +13,9 @@ public abstract class BaseMybatisDao {
 		this.sessionTemplate = sessionTemplate;
 	}
 
+	protected String createStatement(String namespace, String stmt) {
+		StringBuilder sb = new StringBuilder(namespace);
+		sb.append(".").append(stmt);
+		return sb.toString();
+	}
 }
