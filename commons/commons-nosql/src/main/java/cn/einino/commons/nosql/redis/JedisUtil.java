@@ -3,6 +3,7 @@ package cn.einino.commons.nosql.redis;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import cn.einino.commons.nosql.model.RedisDatasourceConfig;
 import cn.einino.commons.nosql.model.RedisPoolConfig;
@@ -15,7 +16,7 @@ public class JedisUtil {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     private final Object lock = new Object();
-    private volatile Map<String, JedisPool> pools = Collections.synchronizedMap(new HashMap<String, JedisPool>());
+    private volatile Map<String, JedisPool> pools = new ConcurrentHashMap<String, JedisPool>();
 
     public Jedis getJedis(RedisDatasourceConfig config) {
         Jedis jedis;

@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by einino on 2016/11/18.
@@ -21,8 +22,7 @@ public abstract class ProtostuffRuntimeUtil {
 
     private static final int DEFAULT_LIST_BUFFER_SIZE = 512;
     private static final Logger logger = LoggerFactory.getLogger(ProtostuffRuntimeUtil.class);
-    private static final Object lock = new Object();
-    private static final Map<Class<?>, RuntimeSchema<?>> schemas = new HashMap<>(16);
+    private static final ConcurrentHashMap<Class<?>, RuntimeSchema<?>> schemas = new ConcurrentHashMap<>(16);
 
     private static <T> RuntimeSchema<T> getSchema(Class<?> clz) {
         if (clz == null) {
@@ -31,16 +31,11 @@ public abstract class ProtostuffRuntimeUtil {
         }
         RuntimeSchema<?> schema = schemas.get(clz);
         if (schema == null) {
-            synchronized (lock) {
-                schema = schemas.get(clz);
-                if (schema == null) {
-                    if (logger.isDebugEnabled()) {
-                        String msg = new StringBuilder("Get class:[").append(clz).append("] protostuff schema").toString();
-                        logger.debug(msg);
-                    }
-                    schema = RuntimeSchema.createFrom(clz);
-                }
+            if (logger.isDebugEnabled()) {
+                String msg = new StringBuilder("Get class:[").append(clz).append("] protostuff schema").toString();
+                logger.debug(msg);
             }
+            schema = schemas.putIfAbsent(clz, RuntimeSchema.createFrom(clz));
         }
         return (RuntimeSchema<T>) schema;
     }
