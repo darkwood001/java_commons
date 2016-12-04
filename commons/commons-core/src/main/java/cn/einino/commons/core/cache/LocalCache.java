@@ -5,11 +5,13 @@ import cn.einino.commons.core.module.CacheKey;
 
 public interface LocalCache {
 
-	void initCache();
+    void initCache();
 
-	<T extends Object> T get(CacheKey key) throws CacheException;
+    <T> T get(CacheKey key) throws CacheException;
 
-	void put(CacheKey key, Object value) throws CacheException;
+    void put(CacheKey key, Object value) throws CacheException;
 
-	void cleanUp();
+    void delete(CacheKey key) throws CacheException;
+
+    void cleanUp();
 }
