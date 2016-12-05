@@ -5,11 +5,13 @@ package cn.einino.commons.serializer.exceptions;
  */
 public class SerializeException extends RuntimeException {
 
-    public SerializeException(String message) {
-        super(message);
-    }
+	private static final long serialVersionUID = 1261053067005195272L;
 
-    public SerializeException(String message, Throwable cause) {
-        super(message, cause);
-    }
+	public SerializeException(String message) {
+		super(message);
+	}
+
+	public SerializeException(String message, Throwable cause) {
+		super(message, cause);
+	}
 }
