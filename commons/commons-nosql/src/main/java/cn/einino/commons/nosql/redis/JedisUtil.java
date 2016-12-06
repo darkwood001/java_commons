@@ -1,14 +1,13 @@
 package cn.einino.commons.nosql.redis;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import cn.einino.commons.nosql.model.RedisDatasourceConfig;
-import cn.einino.commons.nosql.model.RedisPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import cn.einino.commons.nosql.model.RedisDatasourceConfig;
+import cn.einino.commons.nosql.model.RedisPoolConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
