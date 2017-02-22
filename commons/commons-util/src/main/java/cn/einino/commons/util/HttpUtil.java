@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,6 +30,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cn.einino.commons.util.exception.HttpException;
 import cn.einino.commons.util.module.http.NameValueParam;
@@ -36,6 +39,7 @@ import cn.einino.commons.util.module.http.RouteInfo;
 
 public class HttpUtil {
 
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final boolean pooling;
 	private PoolingHttpClientConnectionManager cm;
 	private int maxTotal = 20;
@@ -102,13 +106,12 @@ public class HttpUtil {
 			builder.setConnectionManager(cm);
 		}
 		if (https) {
-			SSLConnectionSocketFactory sslsf = SSLConnectionSocketFactory
-					.getSocketFactory();
+			SSLConnectionSocketFactory sslsf = SSLConnectionSocketFactory.getSocketFactory();
 			builder.setSSLSocketFactory(sslsf);
 		}
 		httpClient = builder.build();
-		config = RequestConfig.custom().setConnectTimeout(connetionTimeout)
-				.setConnectionRequestTimeout(soTimeout).build();
+		config = RequestConfig.custom().setConnectTimeout(connetionTimeout).setConnectionRequestTimeout(soTimeout)
+				.build();
 	}
 
 	public void destroyHttpClient() {
@@ -120,19 +123,24 @@ public class HttpUtil {
 		}
 	}
 
-	public String getUTF8String(final String uri, Map<String, Object> params)
-			throws HttpException {
+	public String getUTF8String(final String uri, Map<String, Object> params) throws HttpException {
 		return getString(uri, params, "UTF-8");
 	}
 
-	public byte[] getBinary(final String uri, Map<String, Object> params)
-			throws HttpException {
+	public byte[] getBinary(final String uri, Map<String, Object> params) throws HttpException {
 		byte[] datas;
 		StringBuilder builder = new StringBuilder(uri).append("?");
 		if (params != null && params.size() > 0) {
 			for (Entry<String, Object> entry : params.entrySet()) {
-				builder.append(entry.getKey()).append("=")
-						.append(entry.getValue()).append("&");
+				Object o = entry.getValue();
+				if (o instanceof Collection) {
+					Collection<?> collection = (Collection<?>) o;
+					for (Object val : collection) {
+						builder.append(entry.getKey()).append("=").append(val).append("&");
+					}
+				} else {
+					builder.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
+				}
 			}
 		}
 		String url = builder.substring(0, builder.length() - 1);
@@ -141,155 +149,168 @@ public class HttpUtil {
 		httpGet.setConfig(config);
 		try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
 			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-				String emsg = new StringBuilder("Http get request uri:[")
-						.append(uri).append("] response error").toString();
+				String emsg = new StringBuilder("Http get request uri:[").append(uri).append("] response error")
+						.toString();
 				throw new HttpException(emsg);
 			} else {
 				datas = EntityUtils.toByteArray(response.getEntity());
 			}
 		} catch (IOException e) {
-			String emsg = new StringBuilder("Http get request uri:[")
-					.append(uri).append("] request error").toString();
+			String emsg = new StringBuilder("Http get request uri:[").append(uri).append("] request error").toString();
 			throw new HttpException(emsg, e);
 		}
 		return datas;
 	}
 
-	public String getString(final String uri, Map<String, Object> params,
-			final String charset) throws HttpException {
+	public String getString(final String uri, Map<String, Object> params, final String charset) throws HttpException {
 		String resp = null;
 		StringBuilder builder = new StringBuilder(uri).append("?");
 		if (params != null && params.size() > 0) {
 			for (Entry<String, Object> entry : params.entrySet()) {
-				builder.append(entry.getKey()).append("=")
-						.append(entry.getValue()).append("&");
+				Object o = entry.getValue();
+				if (o instanceof Collection) {
+					Collection<?> collection = (Collection<?>) o;
+					for (Object val : collection) {
+						builder.append(entry.getKey()).append("=").append(val).append("&");
+					}
+				} else {
+					builder.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
+				}
 			}
 		}
 		String url = builder.substring(0, builder.length() - 1);
+		if (logger.isDebugEnabled()) {
+			String msg = new StringBuilder("Http util get string url:[").append(url).append("]").toString();
+			logger.debug(msg);
+		}
 		HttpGet httpGet = new HttpGet(url);
 		httpGet.addHeader("User-Agent", userAgent);
 		httpGet.setConfig(config);
 		try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
 			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-				String emsg = new StringBuilder("Http get request uri:[")
-						.append(uri).append("] response error").toString();
+				String emsg = new StringBuilder("Http get request uri:[").append(uri).append("] response error")
+						.toString();
 				throw new HttpException(emsg);
 			} else {
 				resp = EntityUtils.toString(response.getEntity(), charset);
 			}
 		} catch (IOException e) {
-			String emsg = new StringBuilder("Http get request uri:[")
-					.append(uri).append("] request error").toString();
+			String emsg = new StringBuilder("Http get request uri:[").append(uri).append("] request error").toString();
 			throw new HttpException(emsg, e);
 		}
 		return resp;
 	}
 
-	public byte[] postUTF8Binary(final String uri,
-			final Map<String, Object> params) throws HttpException {
+	public byte[] postUTF8Binary(final String uri, final Map<String, Object> params) throws HttpException {
 		return postBinary(uri, params, "UTF-8");
 	}
 
-	public byte[] postBinary(final String uri,
-			final Map<String, Object> params, final String charset)
+	public byte[] postBinary(final String uri, final Map<String, Object> params, final String charset)
 			throws HttpException {
 		byte[] datas;
 		HttpPost httpPost = new HttpPost(uri);
 		httpPost.addHeader("User-Agent", userAgent);
 		httpPost.setConfig(config);
 		if (params != null && params.size() > 0) {
-			List<BasicNameValuePair> list = new ArrayList<BasicNameValuePair>(
-					params.size());
+			List<BasicNameValuePair> list = new ArrayList<BasicNameValuePair>(params.size());
 			BasicNameValuePair pair;
 			for (Entry<String, Object> entry : params.entrySet()) {
-				pair = new BasicNameValuePair(entry.getKey(), entry.getValue()
-						.toString());
-				list.add(pair);
+				Object o = entry.getValue();
+				if (o instanceof Collection) {
+					Collection<?> collection = (Collection<?>) o;
+					for (Object val : collection) {
+						pair = new BasicNameValuePair(entry.getKey(), val.toString());
+						list.add(pair);
+					}
+				} else {
+					pair = new BasicNameValuePair(entry.getKey(), entry.getValue().toString());
+					list.add(pair);
+				}
 			}
 			try {
 				httpPost.setEntity(new UrlEncodedFormEntity(list, charset));
 			} catch (UnsupportedEncodingException ex) {
-				String emsg = new StringBuilder("Encod form entity charset:[")
-						.append(charset).append("] error").toString();
+				String emsg = new StringBuilder("Encod form entity charset:[").append(charset).append("] error")
+						.toString();
 				throw new HttpException(emsg, ex);
 			}
 		}
 		try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
 			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-				String emsg = new StringBuilder("Http post request uri:[")
-						.append(uri).append("] response error").toString();
+				String emsg = new StringBuilder("Http post request uri:[").append(uri).append("] response error")
+						.toString();
 				throw new HttpException(emsg);
 			} else {
 				datas = EntityUtils.toByteArray(response.getEntity());
 			}
 		} catch (IOException ex) {
-			String emsg = new StringBuilder("Http post request uri:[")
-					.append(uri).append("] request error").toString();
+			String emsg = new StringBuilder("Http post request uri:[").append(uri).append("] request error").toString();
 			throw new HttpException(emsg, ex);
 		}
 		return datas;
 	}
 
-	public String postUTF8String(final String uri, Map<String, Object> params)
-			throws HttpException {
+	public String postUTF8String(final String uri, Map<String, Object> params) throws HttpException {
 		return postString(uri, params, "UTF-8");
 	}
 
-	public String postString(final String uri,
-			final Map<String, Object> params, final String charset)
+	public String postString(final String uri, final Map<String, Object> params, final String charset)
 			throws HttpException {
 		String resp;
 		HttpPost httpPost = new HttpPost(uri);
 		httpPost.addHeader("User-Agent", userAgent);
 		httpPost.setConfig(config);
 		if (params != null && params.size() > 0) {
-			List<BasicNameValuePair> list = new ArrayList<BasicNameValuePair>(
-					params.size());
+			List<BasicNameValuePair> list = new ArrayList<BasicNameValuePair>(params.size());
 			BasicNameValuePair pair;
 			for (Entry<String, Object> entry : params.entrySet()) {
-				pair = new BasicNameValuePair(entry.getKey(), entry.getValue()
-						.toString());
-				list.add(pair);
+				Object o = entry.getValue();
+				if (o instanceof Collection) {
+					Collection<?> collection = (Collection<?>) o;
+					for (Object val : collection) {
+						pair = new BasicNameValuePair(entry.getKey(), val.toString());
+						list.add(pair);
+					}
+				} else {
+					pair = new BasicNameValuePair(entry.getKey(), entry.getValue().toString());
+					list.add(pair);
+				}
 			}
 			try {
 				httpPost.setEntity(new UrlEncodedFormEntity(list, charset));
 			} catch (UnsupportedEncodingException ex) {
-				String emsg = new StringBuilder("Encod form entity charset:[")
-						.append(charset).append("] error").toString();
+				String emsg = new StringBuilder("Encod form entity charset:[").append(charset).append("] error")
+						.toString();
 				throw new HttpException(emsg, ex);
 			}
 		}
 		try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
 			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-				String emsg = new StringBuilder("Http post request uri:[")
-						.append(uri).append("] response error").toString();
+				String emsg = new StringBuilder("Http post request uri:[").append(uri).append("] response error")
+						.toString();
 				throw new HttpException(emsg);
 			} else {
 				resp = EntityUtils.toString(response.getEntity(), charset);
 			}
 		} catch (IOException ex) {
-			String emsg = new StringBuilder("Http post request uri:[")
-					.append(uri).append("] request error").toString();
+			String emsg = new StringBuilder("Http post request uri:[").append(uri).append("] request error").toString();
 			throw new HttpException(emsg, ex);
 		}
 		return resp;
 	}
 
-	public String postUTF8String(final String uri,
-			final List<NameValueParam> params) throws HttpException {
+	public String postUTF8String(final String uri, final List<NameValueParam> params) throws HttpException {
 		return postString(uri, params, "UTF-8");
 	}
 
-	public String postString(final String uri,
-			final List<NameValueParam> params, final String charset)
+	public String postString(final String uri, final List<NameValueParam> params, final String charset)
 			throws HttpException {
 		String resp;
 		HttpPost httpPost = new HttpPost(uri);
 		httpPost.addHeader("User-Agent", userAgent);
 		httpPost.setConfig(config);
 		if (params != null && params.size() > 0) {
-			List<BasicNameValuePair> list = new ArrayList<BasicNameValuePair>(
-					params.size());
+			List<BasicNameValuePair> list = new ArrayList<BasicNameValuePair>(params.size());
 			BasicNameValuePair pair;
 			for (NameValueParam param : params) {
 				pair = new BasicNameValuePair(param.getName(), param.getValue());
@@ -297,36 +318,32 @@ public class HttpUtil {
 				try {
 					httpPost.setEntity(new UrlEncodedFormEntity(list, charset));
 				} catch (UnsupportedEncodingException ex) {
-					String emsg = new StringBuilder(
-							"Encod form entity charset:[").append(charset)
-							.append("] error").toString();
+					String emsg = new StringBuilder("Encod form entity charset:[").append(charset).append("] error")
+							.toString();
 					throw new HttpException(emsg, ex);
 				}
 			}
 		}
 		try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
 			if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-				String emsg = new StringBuilder("Http post request uri:[")
-						.append(uri).append("] response error").toString();
+				String emsg = new StringBuilder("Http post request uri:[").append(uri).append("] response error")
+						.toString();
 				throw new HttpException(emsg);
 			} else {
 				resp = EntityUtils.toString(response.getEntity(), charset);
 			}
 		} catch (IOException ex) {
-			String emsg = new StringBuilder("Http post request uri:[")
-					.append(uri).append("] request error").toString();
+			String emsg = new StringBuilder("Http post request uri:[").append(uri).append("] request error").toString();
 			throw new HttpException(emsg, ex);
 		}
 		return resp;
 	}
 
-	public String postMultiPartUTF8String(final String uri,
-			final Map<String, Object> params) throws HttpException {
+	public String postMultiPartUTF8String(final String uri, final Map<String, Object> params) throws HttpException {
 		return postMultiPartString(uri, params, "UTF-8");
 	}
 
-	public String postMultiPartString(final String uri,
-			final Map<String, Object> params, final String charset)
+	public String postMultiPartString(final String uri, final Map<String, Object> params, final String charset)
 			throws HttpException {
 		String resp;
 		HttpPost httpPost = new HttpPost(uri);
@@ -338,14 +355,27 @@ public class HttpUtil {
 			StringBody stringBody;
 			for (Entry<String, Object> entry : params.entrySet()) {
 				value = entry.getKey();
-				if (value instanceof String) {
-					stringBody = new StringBody((String) value,
-							ContentType.create("text/plain", charset));
-					builder.addPart(entry.getKey(), stringBody);
-				} else if (value instanceof InputStream) {
-					builder.addBinaryBody(entry.getKey(), (InputStream) value);
-				} else if (value instanceof File) {
-					builder.addBinaryBody(entry.getKey(), (File) value);
+				if (value instanceof Collection) {
+					Collection<?> collection = (Collection<?>) value;
+					for (Object val : collection) {
+						if (val instanceof InputStream) {
+							builder.addBinaryBody(entry.getKey(), (InputStream) val);
+						} else if (val instanceof File) {
+							builder.addBinaryBody(entry.getKey(), (File) val);
+						} else {
+							stringBody = new StringBody(val.toString(), ContentType.create("text/plain", charset));
+							builder.addPart(entry.getKey(), stringBody);
+						}
+					}
+				} else {
+					if (value instanceof InputStream) {
+						builder.addBinaryBody(entry.getKey(), (InputStream) value);
+					} else if (value instanceof File) {
+						builder.addBinaryBody(entry.getKey(), (File) value);
+					} else {
+						stringBody = new StringBody(value.toString(), ContentType.create("text/plain", charset));
+						builder.addPart(entry.getKey(), stringBody);
+					}
 				}
 			}
 			HttpEntity entity = builder.build();
@@ -355,29 +385,34 @@ public class HttpUtil {
 			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
 				resp = EntityUtils.toString(response.getEntity(), charset);
 			} else {
-				String emsg = new StringBuilder(
-						"Http post multipart request uri:[").append(uri)
+				String emsg = new StringBuilder("Http post multipart request uri:[").append(uri)
 						.append("] response error").toString();
 				throw new HttpException(emsg);
 			}
 		} catch (IOException ex) {
-			String emsg = new StringBuilder("Http post multipart request uri:[")
-					.append(uri).append("] request error").toString();
+			String emsg = new StringBuilder("Http post multipart request uri:[").append(uri).append("] request error")
+					.toString();
 			throw new HttpException(emsg, ex);
 		}
 		return resp;
 	}
 
-	public byte[] postStrEntityBinary(final String uri,
-			final Map<String, String> uriParams, final String strEntity,
+	public byte[] postStrEntityBinary(final String uri, final Map<String, String> uriParams, final String strEntity,
 			final String charset) throws HttpException {
 		byte[] datas = null;
 		String realUri = uri;
 		if (uriParams != null && uriParams.size() > 0) {
 			StringBuilder builder = new StringBuilder(uri).append("?");
 			for (Entry<String, String> entry : uriParams.entrySet()) {
-				builder.append(entry.getKey()).append("=")
-						.append(entry.getValue());
+				Object o = entry.getValue();
+				if (o instanceof Collection) {
+					Collection<?> collection = (Collection<?>) o;
+					for (Object val : collection) {
+						builder.append(entry.getKey()).append("=").append(val).append("&");
+					}
+				} else {
+					builder.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
+				}
 			}
 			realUri = builder.substring(0, builder.length() - 1);
 		}
@@ -390,27 +425,22 @@ public class HttpUtil {
 			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
 				datas = EntityUtils.toByteArray(response.getEntity());
 			} else {
-				String emsg = new StringBuilder(
-						"Http post string entity request uri:[").append(uri)
+				String emsg = new StringBuilder("Http post string entity request uri:[").append(uri)
 						.append("] response error").toString();
 				throw new HttpException(emsg);
 			}
 		} catch (IOException ex) {
-			String emsg = new StringBuilder(
-					"Http post string entity request uri:[").append(uri)
+			String emsg = new StringBuilder("Http post string entity request uri:[").append(uri)
 					.append("] request error").toString();
 			throw new HttpException(emsg, ex);
 		}
 		return datas;
 	}
 
-	public String postStrEntityString(final String uri,
-			final Map<String, String> uriParams, final String strEntity,
-			final String entityCharset, final String charset)
-			throws HttpException {
+	public String postStrEntityString(final String uri, final Map<String, String> uriParams, final String strEntity,
+			final String entityCharset, final String charset) throws HttpException {
 		String resp = null;
-		byte[] datas = postStrEntityBinary(uri, uriParams, strEntity,
-				entityCharset);
+		byte[] datas = postStrEntityBinary(uri, uriParams, strEntity, entityCharset);
 		if (datas != null) {
 			try {
 				resp = new String(datas, charset);
@@ -420,11 +450,9 @@ public class HttpUtil {
 		return resp;
 	}
 
-	public String postStrEntityUTF8String(final String uri,
-			final Map<String, String> uriParams, final String strEntity)
+	public String postStrEntityUTF8String(final String uri, final Map<String, String> uriParams, final String strEntity)
 			throws HttpException {
-		String resp = postStrEntityString(uri, uriParams, strEntity, "UTF-8",
-				"UTF-8");
+		String resp = postStrEntityString(uri, uriParams, strEntity, "UTF-8", "UTF-8");
 		return resp;
 	}
 }
